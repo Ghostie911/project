@@ -1,71 +1,103 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bg">
 <head>
-  <meta charset="UTF-8">
-  <title>Prolog Analyzer</title>
-  <style>
-    body {
-      font-family: Arial;
-      margin: 30px;
-    }
-    #output {
-      white-space: pre-wrap;
-      background: #f0f0f0;
-      padding: 10px;
-      border-radius: 8px;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prolog: Коли и GIF визуализация</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h2>Качи Prolog файл (.pl)</h2>
-  <input type="file" id="fileInput" accept=".pl">
-  <div id="output"></div>
- 
+  <header>
+    <h1>🚗 Prolog Автомобили</h1>
+    <p>Открий типове автомобили чрез логически заявки и виж ги в движение!</p>
+  </header>
+
+  <main>
+    <section class="input-section">
+      <h2>🧠 Въведи Prolog заявка</h2>
+      <textarea id="prolog-input" placeholder="% Примери:\nis_fast(X).\nis_offroad(X).\nis_electric(X)."></textarea>
+      <button onclick="runProlog()">Изпълни заявката</button>
+    </section>
+
+    <section class="output-section">
+      <div id="result" class="results-box"></div>
+      <div class="gif-box" id="car-animation">🚘 Тук ще се покаже GIF на автомобил</div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Създадено с ❤️ и Prolog</p>
+  </footer>
+
+  <script src="https://unpkg.com/tau-prolog"></script>
   <script>
-    document.getElementById('fileInput').addEventListener('change', function(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-     
-      const reader = new FileReader();
-     
-      reader.onload = function(e) {
-        const content = e.target.result;
-        const lines = content.split('\n');
-       
-        const facts = [];
-        const rules = [];
-        const comments = [];
-       
-        lines.forEach(line => {
-          const trimmed = line.trim();
-         
-          if (trimmed.startsWith('%')) {
-            comments.push(trimmed);
-          } else if (trimmed.includes(':-')) {
-            rules.push(trimmed);
-          } else if (trimmed && trimmed.endsWith('.')) {
-            facts.push(trimmed);
+    const session = pl.create();
+
+    const knowledge = `
+car(tesla).
+car(bugatti).
+car(jeep).
+car(toyota_prius).
+car(ford_ranger).
+
+fast(bugatti).
+fast(tesla).
+
+electric(tesla).
+electric(toyota_prius).
+
+offroad(jeep).
+offroad(ford_ranger).
+
+is_fast(X) :- fast(X).
+is_electric(X) :- electric(X).
+is_offroad(X) :- offroad(X).
+`;
+
+    session.consult(knowledge);
+
+    const carAnimations = {
+      tesla: '<img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcGN1cHJwaXZvbDc4OGFmNTVyajF5OTh4b2w2MnRvYTNhNG5hNDV2OCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/RWZRMPbu3lc7m/giphy.gif" class="car-gif" alt="Tesla GIF" />',
+      bugatti: '<img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExdTdvY2l3dHZ4NnRweHF0ZTU4MDI2bXd1emFqNWk3MzB5YzdiMjFoZyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/TLtOaKYanbWxCbx6iU/giphy.gif" class="car-gif" alt="Bugatti GIF" />',
+      jeep: '<img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYXFhZG80djM0YXZza3JjZmU0OW1nNzgwNzNmZjNyaXhjNmIwYjIxcyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/GzLnF2EyZXPboFJ0xA/giphy.gif" class="car-gif" alt="Jeep GIF" />',
+      toyota_prius: '<img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZ2d0cGI1ZmVqNGxocmtuaTIwYjMzbTE0czV4M2JxdHZ6ZzV4bzBwMyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/8rUUzqnMR1S4E/giphy.gif" class="car-gif" alt="Prius GIF" />',
+      ferrari: '<img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExeTB0MWd1djdocjVjNmU1eXc4N205emF2cWJtMG5ldmZydWljejZtdyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/TeXVQ0AFBukqA/giphy.gif" class="car-gif" alt="Ferrari GIF" />'
+    };
+
+    function runProlog() {
+      const input = document.getElementById("prolog-input").value;
+      const resultDiv = document.getElementById("result");
+      const animDiv = document.getElementById("car-animation");
+
+      resultDiv.innerHTML = "";
+      animDiv.innerHTML = "";
+
+      session.query(input);
+      session.answers(answer => {
+        if (answer === false) {
+          resultDiv.innerHTML += `<p>Няма повече резултати.</p>`;
+          return;
+        }
+
+        const str = pl.format_answer(answer);
+        if (str === "false.") {
+          resultDiv.innerHTML = "<p>❌ Няма резултати за тази заявка.</p>";
+          return;
+        }
+
+        resultDiv.innerHTML += `<p>✅ ${str}</p>`;
+
+        const match = str.match(/X = (\w+)/);
+        if (match) {
+          const car = match[1];
+          if (carAnimations[car]) {
+            animDiv.innerHTML = carAnimations[car];
+          } else {
+            animDiv.innerHTML = "<p>⚠️ Няма налична анимация за този автомобил.</p>";
           }
-        });
-       
-        const output = `
-🔎 Анализ на Prolog файл:
--------------------------
-Факти (${facts.length}):
-${facts.join('\n')}
-
-Правила (${rules.length}):
-${rules.join('\n')}
-
-Коментари (${comments.length}):
-${comments.join('\n')}
-        `;
-       
-        document.getElementById('output').textContent = output;
-      };
-     
-      reader.readAsText(file);
-    });
+        }
+      });
+    }
   </script>
 </body>
 </html>
